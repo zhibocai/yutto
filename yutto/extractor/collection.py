@@ -68,16 +68,22 @@ class CollectionExtractor(BatchExtractor):
                 avid = item["avid"]
                 ugc_video_list = await get_ugc_video_list(session, avid)
                 await Fetcher.touch_url(session, avid.to_url())
-                if len(ugc_video_list["pages"]) != 1:
+                ugc_video_length = len(ugc_video_list["pages"])
+                if ugc_video_length == 0:
+                    Logger.error(f"视频合集 {collection_title} 没有找到 {item['avid']} 的视频！")
+                    continue
+                if ugc_video_length > 1:
                     Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
-                for ugc_video_item in ugc_video_list["pages"]:
-                    ugc_video_info_list.append(
-                        (
-                            ugc_video_item,
-                            ugc_video_list["title"],
-                            ugc_video_list["pubdate"],
-                        )
+                ugc_video_item = ugc_video_list["pages"][0]
+                ugc_video_item["id"] = item["id"]
+                ugc_video_item["title"] = item["title"]  # 使用视频页展示的合集列表的 title
+                ugc_video_info_list.append(
+                    (
+                        ugc_video_item,
+                        ugc_video_item["title"],
+                        ugc_video_list["pubdate"],
                     )
+                )
             except NotFoundError as e:
                 Logger.error(e.message)
                 continue
@@ -90,7 +96,6 @@ class CollectionExtractor(BatchExtractor):
                 args,
                 {
                     # TODO: 关于对于 id 的优化
-                    # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）
                     "series_title": collection_title,
                     "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
                     "title": title,

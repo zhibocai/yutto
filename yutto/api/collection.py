@@ -26,12 +26,15 @@ async def get_collection_details(session: ClientSession, series_id: SeriesId, mi
         _get_collection_title(session, series_id),
         _get_collection_avids(session, series_id, mid),
     )
+    sub_titles = {}
+    if avids:
+        sub_titles = await _get_collection_sub_titles(session, series_id, avids[0])
     return CollectionDetails(
         title=title,
         pages=[
             CollectionDetailsItem(
                 id=i + 1,
-                title="",  # TODO: 这里应该是合集内的标题，但目前没找到相关的 API
+                title=sub_titles.get(avid.value, ""),
                 avid=avid,
             )
             for i, avid in enumerate(avids)
@@ -61,3 +64,16 @@ async def _get_collection_title(session: ClientSession, series_id: SeriesId) -> 
     json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]
+
+
+async def _get_collection_sub_titles(session: ClientSession, series_id: SeriesId, avid: AvId) -> dict:
+    api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
+    sid = int(series_id.value)
+    json_data = await Fetcher.fetch_json(session, api.format(**avid.to_dict()))
+    assert json_data is not None
+    assert json_data["data"]["ugc_season"]["id"] == sid
+    assert json_data["data"]["ugc_season"]["sections"][0]["season_id"] == sid
+    return {
+        item["bvid"]: item["title"]
+        for item in json_data["data"]["ugc_season"]["sections"][0]["episodes"]
+    }
