@@ -20,6 +20,10 @@ class StatusBar:
         cls._enabled = False
 
     @classmethod
+    def is_enabled(cls) -> bool:
+        return cls._enabled
+
+    @classmethod
     def set_snippers(cls, snippers: list[str]):
         cls._snippers = snippers
 

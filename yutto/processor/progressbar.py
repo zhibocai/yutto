@@ -90,16 +90,20 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
 
         if num_blocks_in_buffer > num_blocks_in_buffer_threshold:
             Logger.debug(f"number blocks in buffer: {num_blocks_in_buffer}")
-        Logger.status.set(
-            "{}{:>10}/{:>10} {:>12}  ".format(
-                bar + " " if bar else bar,
-                size_format(size_now),
-                size_format(total_size),
-                colored_string(size_format(speed) + speed_text_suffix, fore=speed_text_color, style=speed_text_style),
+
+        if Logger.status.is_enabled():
+            Logger.status.set(
+                "{}{:>10}/{:>10} {:>12}  ".format(
+                    bar + " " if bar else bar,
+                    size_format(size_now),
+                    size_format(total_size),
+                    colored_string(size_format(speed) + speed_text_suffix, fore=speed_text_color, style=speed_text_style),
+                )
             )
-        )
+        else:
+            Logger.info("{:>12}/s {:>10}/{:>10}".format(size_format(speed), size_format(size_now), size_format(total_size)))
 
         t, size = t_now, size_now
-        await asyncio.sleep(0.25)
+        await asyncio.sleep(1)
         if total_size == size:
             break
